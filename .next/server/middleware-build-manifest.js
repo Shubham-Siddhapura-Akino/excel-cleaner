@@ -1,0 +1,81 @@
+globalThis.__BUILD_MANIFEST = {
+  "pages": {
+    "/_app": [
+      "static/chunks/40f_kmk2dd8g5.js",
+      "static/chunks/1weszg5b5h_-e.js",
+      "static/chunks/turbopack-2u1d16houkiyo.js"
+    ],
+    "/_error": [
+      "static/chunks/3n_c8q1xtyv-r.js",
+      "static/chunks/turbopack-2u1d16houkiyo.js"
+    ]
+  },
+  "devFiles": [],
+  "polyfillFiles": [
+    "static/chunks/0cz1d0mv5g_q7.js"
+  ],
+  "lowPriorityFiles": [
+    "static/VnJ1bjrfbe3p9l6g2XDSS/_buildManifest.js",
+    "static/VnJ1bjrfbe3p9l6g2XDSS/_ssgManifest.js",
+    "static/VnJ1bjrfbe3p9l6g2XDSS/_clientMiddlewareManifest.js"
+  ],
+  "rootMainFiles": [
+    "static/chunks/0j1we3cwg31qe.js",
+    "static/chunks/0m3mby5pxg4oz.js",
+    "static/chunks/39_j1bdzreq0m.js",
+    "static/chunks/turbopack-2u1d16houkiyo.js"
+  ],
+  "rootMainFilesTree": {},
+  "pagesChunkGroupBootstrapParams": {
+    "/page": {
+      "otherChunks": [
+        "static/chunks/0j1we3cwg31qe.js",
+        "static/chunks/0m3mby5pxg4oz.js",
+        "static/chunks/39_j1bdzreq0m.js"
+      ],
+      "runtimeModuleIds": [
+        94553
+      ]
+    },
+    "/_not-found/page": {
+      "otherChunks": [
+        "static/chunks/0j1we3cwg31qe.js",
+        "static/chunks/0m3mby5pxg4oz.js",
+        "static/chunks/39_j1bdzreq0m.js"
+      ],
+      "runtimeModuleIds": [
+        94553
+      ]
+    },
+    "/_global-error/page": {
+      "otherChunks": [
+        "static/chunks/0j1we3cwg31qe.js",
+        "static/chunks/0m3mby5pxg4oz.js",
+        "static/chunks/39_j1bdzreq0m.js"
+      ],
+      "runtimeModuleIds": [
+        94553
+      ]
+    },
+    "/_app": {
+      "otherChunks": [
+        "static/chunks/40f_kmk2dd8g5.js",
+        "static/chunks/1weszg5b5h_-e.js"
+      ],
+      "runtimeModuleIds": [
+        10783,
+        30984
+      ]
+    },
+    "/_error": {
+      "otherChunks": [
+        "static/chunks/3n_c8q1xtyv-r.js"
+      ],
+      "runtimeModuleIds": [
+        10783,
+        80184
+      ]
+    }
+  },
+  "chunkLoadingGlobal": "TURBOPACK"
+};

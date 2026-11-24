@@ -1,0 +1,43 @@
+{
+  "name": "excel-cleaner",
+  "version": "1.0.0",
+  "description": "Production-ready Node.js application that cleans text values in Excel workbooks while preserving all formatting, structure, and metadata.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "server:fastify": "node server/server.js",
+    "cli": "node index.js",
+    "test": "node test/testRunner.js && node test/serverTest.js"
+  },
+  "dependencies": {
+    "@fastify/cors": "^11.4.3",
+    "@fastify/multipart": "^10.1.9",
+    "exceljs": "^4.4.0",
+    "fastify": "^5.12.8",
+    "jszip": "^3.10.2",
+    "lucide-react": "^1.78.0",
+    "next": "^16.4.6",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "keywords": [
+    "excel",
+    "exceljs",
+    "cleaner",
+    "whitespace-normalization",
+    "spreadsheet"
+  ],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "autoprefixer": "^10.7.0",
+    "postcss": "^8.5.33",
+    "tailwindcss": "^3.4.19"
+  }
+}

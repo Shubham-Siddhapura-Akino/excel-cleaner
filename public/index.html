@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Excel Cleaner Studio | Batch Clean & Normalize Workbooks</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'system-ui', 'sans-serif'],
+            mono: ['"JetBrains Mono"', 'monospace'],
+          },
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+            }
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.7; }
+    }
+    .animate-pulse-subtle {
+      animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+    .diff-removed {
+      background-color: rgba(239, 68, 68, 0.15);
+      color: #ef4444;
+      border-radius: 3px;
+      padding: 1px 4px;
+      font-weight: 600;
+    }
+    .diff-added {
+      background-color: rgba(16, 185, 129, 0.15);
+      color: #10b981;
+      border-radius: 3px;
+      padding: 1px 4px;
+      font-weight: 600;
+    }
+    .glass-card {
+      background: rgba(30, 41, 59, 0.7);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen antialiased flex flex-col font-sans selection:bg-emerald-500 selection:text-white">
+
+  <!-- Background Decorative Gradients -->
+  <div class="fixed inset-0 pointer-events-none overflow-hidden z-0">
+    <div class="absolute -top-40 left-1/2 -translate-x-1/2 w-[1000px] h-[500px] bg-gradient-to-b from-emerald-500/10 via-teal-500/5 to-transparent blur-3xl"></div>
+    <div class="absolute top-1/3 -left-48 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl"></div>
+    <div class="absolute top-2/3 -right-48 w-96 h-96 bg-emerald-500/5 rounded-full blur-3xl"></div>
+  </div>
+
+  <!-- Header / Navigation -->
+  <header class="relative z-10 border-b border-slate-800/80 bg-slate-900/60 backdrop-blur-md sticky top-0">
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
+      <div class="flex items-center space-x-3">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 flex items-center justify-center shadow-lg shadow-emerald-500/20">
+          <svg class="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="font-bold text-lg tracking-tight text-white">Excel Cleaner</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">Studio Batch</span>
+          </div>
+          <p class="text-xs text-slate-400">Attach multiple files • Clean all • Download all at once</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-4">
+        <div class="hidden sm:flex items-center space-x-2 text-xs font-medium text-emerald-400 bg-emerald-500/10 px-3 py-1.5 rounded-full border border-emerald-500/20">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+          <span>Batch Engine Ready</span>
+        </div>
+        <button id="viewHistoryBtn" class="text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 transition px-3 py-1.5 rounded-lg border border-slate-700 flex items-center space-x-1.5">
+          <svg class="w-3.5 h-3.5 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          <span>Output History</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <main class="relative z-10 flex-1 max-w-5xl w-full mx-auto px-4 sm:px-6 py-8 sm:py-12 flex flex-col space-y-8">
+
+    <!-- Hero Title -->
+    <div class="text-center space-y-3 max-w-2xl mx-auto">
+      <h1 class="text-3xl sm:text-4xl font-extrabold tracking-tight text-white">
+        Batch Clean & Download Excel Spreadsheets
+      </h1>
+      <p class="text-sm sm:text-base text-slate-400 leading-relaxed">
+        Attach single or multiple Excel workbooks at once. Clean all sheets, normalize whitespace, strip quotes, and download everything as a bundle or file-by-file with 100% style and formula preservation.
+      </p>
+    </div>
+
+    <!-- Feature Highlights -->
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs text-slate-400">
+      <div class="flex items-center space-x-2 p-3 rounded-xl bg-slate-900/50 border border-slate-800/80">
+        <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+        <span>Multiple File Attachment & Queue</span>
+      </div>
+      <div class="flex items-center space-x-2 p-3 rounded-xl bg-slate-900/50 border border-slate-800/80">
+        <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+        <span>Download All At Once (.ZIP or Single)</span>
+      </div>
+      <div class="flex items-center space-x-2 p-3 rounded-xl bg-slate-900/50 border border-slate-800/80">
+        <svg class="w-4 h-4 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        <span>Formulas, Layouts & Formats Preserved</span>
+      </div>
+    </div>
+
+    <!-- Upload Card -->
+    <div id="uploadSection" class="glass-card rounded-2xl p-6 sm:p-8 shadow-2xl relative overflow-hidden transition-all duration-300">
+
+      <!-- Drag & Drop Area -->
+      <div 
+        id="dropZone" 
+        class="border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-xl p-8 sm:p-12 text-center cursor-pointer transition-all duration-200 bg-slate-900/40 hover:bg-slate-800/40 group flex flex-col items-center justify-center space-y-4"
+      >
+        <!-- Multiple files enabled! -->
+        <input type="file" id="fileInput" class="hidden" multiple accept=".xlsx,.xlsm,.xls" />
+        
+        <div class="w-16 h-16 rounded-2xl bg-slate-800 group-hover:bg-emerald-500/20 text-slate-400 group-hover:text-emerald-400 flex items-center justify-center transition-all duration-200 group-hover:scale-110 shadow-inner">
+          <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.75" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+          </svg>
+        </div>
+
+        <div class="space-y-1">
+          <p class="text-base font-semibold text-slate-200 group-hover:text-white transition">
+            Attach one or multiple Excel files here, or <span class="text-emerald-400 underline decoration-emerald-500/50 underline-offset-2">browse files</span>
+          </p>
+          <p class="text-xs text-slate-400">Select multiple files using Ctrl / Cmd or drag multiple workbooks directly</p>
+        </div>
+
+        <div class="flex items-center space-x-2 text-xs text-slate-500 pt-2">
+          <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">.xlsx</span>
+          <span class="px-2 py-0.5 rounded bg-slate-800 text-slate-400 font-mono">.xlsm</span>
+          <span>• Batch Processing Supported</span>
+        </div>
+      </div>
+
+      <!-- Attached Files Queue (Shows when 1 or more files attached) -->
+      <div id="attachedFilesSection" class="hidden mt-6 space-y-3">
+        <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+          <div class="flex items-center space-x-2">
+            <span class="text-xs font-bold uppercase tracking-wider text-slate-300">Attached Workbooks</span>
+            <span id="attachedCountBadge" class="text-xs px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold">0</span>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button id="addMoreFilesBtn" class="text-xs text-emerald-400 hover:text-emerald-300 bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 px-3 py-1 rounded-lg transition flex items-center space-x-1">
+              <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+              <span>Attach More</span>
+            </button>
+            <button id="clearAllFilesBtn" class="text-xs text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 px-2 py-1 rounded-lg transition">
+              Clear All
+            </button>
+          </div>
+        </div>
+
+        <!-- Scrollable list of attached files -->
+        <div id="fileQueueList" class="max-h-60 overflow-y-auto space-y-2 pr-1 divide-y divide-slate-800/40">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+      <!-- Configurable Cleaning Rules (Collapsible / Customizable) -->
+      <div class="mt-6 border-t border-slate-800 pt-5">
+        <div class="flex items-center justify-between cursor-pointer select-none" id="toggleOptionsBtn">
+          <div class="flex items-center space-x-2 text-xs font-semibold uppercase tracking-wider text-slate-400">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+            <span>Cleaning Options</span>
+          </div>
+          <span class="text-xs text-emerald-400 font-medium">Standard Strict Rules Active</span>
+        </div>
+
+        <div id="optionsPanel" class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4 text-xs">
+          <label class="flex items-start space-x-3 p-3 rounded-lg bg-slate-900/60 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+            <input type="checkbox" id="optQuotes" checked class="mt-0.5 rounded text-emerald-500 focus:ring-emerald-500 bg-slate-800 border-slate-700" />
+            <div>
+              <span class="font-medium text-slate-200 block">Remove Double Quotes</span>
+              <span class="text-slate-400 text-[11px]">Deletes all literal quotes (&quot;) from string values</span>
+            </div>
+          </label>
+
+          <label class="flex items-start space-x-3 p-3 rounded-lg bg-slate-900/60 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+            <input type="checkbox" id="optNormalize" checked class="mt-0.5 rounded text-emerald-500 focus:ring-emerald-500 bg-slate-800 border-slate-700" />
+            <div>
+              <span class="font-medium text-slate-200 block">Normalize Whitespace</span>
+              <span class="text-slate-400 text-[11px]">Replaces tabs, newlines, multi-spaces & invisible chars with 1 space</span>
+            </div>
+          </label>
+
+          <label class="flex items-start space-x-3 p-3 rounded-lg bg-slate-900/60 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+            <input type="checkbox" id="optTrim" checked class="mt-0.5 rounded text-emerald-500 focus:ring-emerald-500 bg-slate-800 border-slate-700" />
+            <div>
+              <span class="font-medium text-slate-200 block">Trim Leading & Trailing</span>
+              <span class="text-slate-400 text-[11px]">Strips leading/trailing blank spaces from cells</span>
+            </div>
+          </label>
+
+          <label class="flex items-start space-x-3 p-3 rounded-lg bg-slate-900/60 border border-slate-800 cursor-pointer hover:border-slate-700 transition">
+            <input type="checkbox" id="optPruneRows" checked class="mt-0.5 rounded text-emerald-500 focus:ring-emerald-500 bg-slate-800 border-slate-700" />
+            <div>
+              <span class="font-medium text-slate-200 block">Prune Empty Trailing Rows</span>
+              <span class="text-slate-400 text-[11px]">Prevents bloated empty row tags in saved XML</span>
+            </div>
+          </label>
+        </div>
+
+        <div class="mt-3 flex items-center justify-between text-xs text-slate-400">
+          <label class="flex items-center space-x-2 cursor-pointer">
+            <input type="checkbox" id="optAutoDownload" checked class="rounded text-emerald-500 focus:ring-emerald-500 bg-slate-800 border-slate-700" />
+            <span>Auto-download all cleaned files (as ZIP for batch, or direct file) when done</span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Action Button -->
+      <div class="mt-6 flex flex-col sm:flex-row items-center gap-3">
+        <button 
+          id="cleanBtn" 
+          disabled
+          class="w-full sm:flex-1 py-3.5 px-6 rounded-xl font-semibold text-white bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-emerald-600/30 transition-all duration-200 flex items-center justify-center space-x-2 text-sm"
+        >
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+          </svg>
+          <span id="cleanBtnText">Attach Excel Files to Clean</span>
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Processing State Banner (Hidden by default) -->
+    <div id="processingView" class="hidden glass-card rounded-2xl p-8 text-center space-y-5 animate-pulse-subtle">
+      <div class="w-14 h-14 mx-auto rounded-2xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 flex items-center justify-center">
+        <svg class="w-7 h-7 animate-spin" fill="none" viewBox="0 0 24 24">
+          <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+          <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+        </svg>
+      </div>
+      <div class="space-y-1">
+        <h3 id="processingTitle" class="text-lg font-bold text-white">Cleaning Attached Workbooks...</h3>
+        <p id="processingStatusText" class="text-xs text-slate-400">Processing file 1 of 1...</p>
+      </div>
+      <div class="w-full bg-slate-800 rounded-full h-2 max-w-md mx-auto overflow-hidden">
+        <div id="progressBar" class="bg-gradient-to-r from-emerald-500 to-teal-400 h-2 rounded-full transition-all duration-300" style="width: 10%"></div>
+      </div>
+    </div>
+
+    <!-- Results Section (Hidden until completion) -->
+    <div id="resultsSection" class="hidden space-y-6">
+
+      <!-- Success Callout & Action Bar -->
+      <div class="glass-card rounded-2xl p-6 sm:p-8 border border-emerald-500/30 bg-gradient-to-r from-emerald-950/40 via-slate-900/60 to-slate-900/60 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-6">
+        <div class="flex items-center space-x-4">
+          <div class="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/30 shrink-0">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <h2 id="resultsHeadline" class="text-lg font-bold text-white">All Workbooks Cleaned Successfully!</h2>
+              <span id="batchTimeBadge" class="text-xs font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300">0.05s</span>
+            </div>
+            <p id="resultsSubtext" class="text-xs text-slate-400 font-mono mt-0.5">Ready to download</p>
+          </div>
+        </div>
+
+        <div class="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <!-- Download All Button (Primary) -->
+          <a 
+            id="downloadAllBtn" 
+            href="#" 
+            class="w-full sm:w-auto py-3.5 px-6 rounded-xl font-bold text-white bg-gradient-to-r from-emerald-600 via-emerald-500 to-teal-500 hover:from-emerald-500 hover:to-teal-400 shadow-xl shadow-emerald-600/30 transition-all flex items-center justify-center space-x-2 text-sm cursor-pointer"
+          >
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <span id="downloadAllBtnText">Download All at Once (.ZIP)</span>
+          </a>
+          <button 
+            id="cleanAnotherBtn" 
+            class="w-full sm:w-auto py-3 px-4 rounded-xl text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 text-sm font-medium transition"
+          >
+            Clean More Files
+          </button>
+        </div>
+      </div>
+
+      <!-- Global Aggregate Statistics Dashboard Cards -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+        <div class="glass-card rounded-xl p-4 text-center">
+          <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Workbooks</div>
+          <div id="statTotalFiles" class="text-xl font-extrabold text-white mt-1 font-mono">0</div>
+        </div>
+        <div class="glass-card rounded-xl p-4 text-center">
+          <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Total Sheets</div>
+          <div id="statTotalSheets" class="text-xl font-extrabold text-white mt-1 font-mono">0</div>
+        </div>
+        <div class="glass-card rounded-xl p-4 text-center">
+          <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Total Rows</div>
+          <div id="statTotalRows" class="text-xl font-extrabold text-white mt-1 font-mono">0</div>
+        </div>
+        <div class="glass-card rounded-xl p-4 text-center">
+          <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Cells Visited</div>
+          <div id="statTotalCells" class="text-xl font-extrabold text-white mt-1 font-mono">0</div>
+        </div>
+        <div class="glass-card rounded-xl p-4 text-center border-emerald-500/30 bg-emerald-950/20">
+          <div class="text-[11px] font-medium text-emerald-400 uppercase tracking-wider">Modified Cells</div>
+          <div id="statTotalModified" class="text-xl font-extrabold text-emerald-400 mt-1 font-mono">0</div>
+        </div>
+        <div class="glass-card rounded-xl p-4 text-center">
+          <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wider">Duration</div>
+          <div id="statTotalTime" class="text-xl font-extrabold text-slate-200 mt-1 font-mono">0ms</div>
+        </div>
+      </div>
+
+      <!-- Individual Cleaned File Cards -->
+      <div class="space-y-4">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-bold uppercase tracking-wider text-slate-300">Cleaned Files Breakdown</h3>
+          <span class="text-xs text-slate-400">Download individually or via the master Download All button above</span>
+        </div>
+
+        <div id="cleanedFilesList" class="space-y-3">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Recent Files Modal/Drawer (Hidden by default) -->
+    <div id="historyModal" class="hidden fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm">
+      <div class="glass-card rounded-2xl max-w-lg w-full p-6 shadow-2xl space-y-4 border border-slate-700">
+        <div class="flex items-center justify-between">
+          <h3 class="text-base font-bold text-white flex items-center space-x-2">
+            <svg class="w-4 h-4 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+            </svg>
+            <span>Cleaned Files in Output Folder</span>
+          </h3>
+          <button id="closeHistoryBtn" class="text-slate-400 hover:text-white p-1 rounded-lg">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+          </button>
+        </div>
+        <p class="text-xs text-slate-400">All saved files on disk in <code class="bg-slate-800 text-emerald-400 px-1.5 py-0.5 rounded font-mono">output/</code>:</p>
+        
+        <div id="historyFileList" class="max-h-64 overflow-y-auto divide-y divide-slate-800 space-y-1">
+          <div class="py-4 text-center text-xs text-slate-500">Loading files...</div>
+        </div>
+
+        <div class="pt-2 text-right">
+          <button id="closeHistoryBottomBtn" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-xs font-semibold text-slate-200 rounded-lg">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- Footer -->
+  <footer class="border-t border-slate-800/80 bg-slate-900/40 py-6 text-center text-xs text-slate-500 relative z-10">
+    <div class="max-w-6xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div>Excel Cleaner Studio • Batch multiple sheet/file attachment and single-click download</div>
+      <div class="text-slate-400 flex items-center space-x-4 font-mono text-[11px]">
+        <span>Node.js + ExcelJS + JSZip</span>
+      </div>
+    </div>
+  </footer>
+
+  <!-- Notification Toast -->
+  <div id="toast" class="fixed bottom-6 right-6 z-50 transform translate-y-24 opacity-0 transition-all duration-300 pointer-events-none max-w-sm rounded-xl p-4 shadow-2xl flex items-center space-x-3 text-xs">
+    <span id="toastIcon"></span>
+    <span id="toastMessage" class="font-medium"></span>
+  </div>
+
+  <script>
+    // State: Array of File objects to process
+    let attachedFiles = [];
+    // State: Results from processing
+    let processedResults = [];
+
+    // DOM Elements
+    const dropZone = document.getElementById('dropZone');
+    const fileInput = document.getElementById('fileInput');
+    const attachedFilesSection = document.getElementById('attachedFilesSection');
+    const attachedCountBadge = document.getElementById('attachedCountBadge');
+    const fileQueueList = document.getElementById('fileQueueList');
+    const addMoreFilesBtn = document.getElementById('addMoreFilesBtn');
+    const clearAllFilesBtn = document.getElementById('clearAllFilesBtn');
+
+    const cleanBtn = document.getElementById('cleanBtn');
+    const cleanBtnText = document.getElementById('cleanBtnText');
+
+    const optQuotes = document.getElementById('optQuotes');
+    const optNormalize = document.getElementById('optNormalize');
+    const optTrim = document.getElementById('optTrim');
+    const optPruneRows = document.getElementById('optPruneRows');
+    const optAutoDownload = document.getElementById('optAutoDownload');
+
+    const uploadSection = document.getElementById('uploadSection');
+    const processingView = document.getElementById('processingView');
+    const processingTitle = document.getElementById('processingTitle');
+    const processingStatusText = document.getElementById('processingStatusText');
+    const progressBar = document.getElementById('progressBar');
+    const resultsSection = document.getElementById('resultsSection');
+
+    const downloadAllBtn = document.getElementById('downloadAllBtn');
+    const downloadAllBtnText = document.getElementById('downloadAllBtnText');
+    const cleanAnotherBtn = document.getElementById('cleanAnotherBtn');
+    const resultsHeadline = document.getElementById('resultsHeadline');
+    const resultsSubtext = document.getElementById('resultsSubtext');
+    const batchTimeBadge = document.getElementById('batchTimeBadge');
+
+    const statTotalFiles = document.getElementById('statTotalFiles');
+    const statTotalSheets = document.getElementById('statTotalSheets');
+    const statTotalRows = document.getElementById('statTotalRows');
+    const statTotalCells = document.getElementById('statTotalCells');
+    const statTotalModified = document.getElementById('statTotalModified');
+    const statTotalTime = document.getElementById('statTotalTime');
+
+    const cleanedFilesList = document.getElementById('cleanedFilesList');
+
+    const historyModal = document.getElementById('historyModal');
+    const viewHistoryBtn = document.getElementById('viewHistoryBtn');
+    const closeHistoryBtn = document.getElementById('closeHistoryBtn');
+    const closeHistoryBottomBtn = document.getElementById('closeHistoryBottomBtn');
+    const historyFileList = document.getElementById('historyFileList');
+
+    // Utility: Toast
+    function showToast(message, isError = false) {
+      const toast = document.getElementById('toast');
+      const toastMessage = document.getElementById('toastMessage');
+      const toastIcon = document.getElementById('toastIcon');
+
+      toast.className = isError
+        ? 'fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 max-w-sm rounded-xl p-4 shadow-2xl flex items-center space-x-3 text-xs bg-rose-950 border border-rose-500/50 text-rose-200'
+        : 'fixed bottom-6 right-6 z-50 transform translate-y-0 opacity-100 transition-all duration-300 max-w-sm rounded-xl p-4 shadow-2xl flex items-center space-x-3 text-xs bg-emerald-950 border border-emerald-500/50 text-emerald-200';
+
+      toastIcon.innerHTML = isError
+        ? '<svg class="w-5 h-5 text-rose-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>'
+        : '<svg class="w-5 h-5 text-emerald-400 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" /></svg>';
+
+      toastMessage.textContent = message;
+
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-24', 'opacity-0');
+      }, 4000);
+    }
+
+    // Utility: Format File Size
+    function formatBytes(bytes) {
+      if (!bytes || bytes === 0) return '0 B';
+      const k = 1024;
+      const sizes = ['B', 'KB', 'MB', 'GB'];
+      const i = Math.floor(Math.log(bytes) / Math.log(k));
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+    }
+
+    // Add Files to Queue
+    function addFiles(files) {
+      if (!files || files.length === 0) return;
+
+      const validExts = ['.xlsx', '.xlsm', '.xls'];
+      let addedCount = 0;
+
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        const ext = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+        if (validExts.includes(ext)) {
+          // Avoid duplicate by name and size
+          const exists = attachedFiles.some(f => f.name === file.name && f.size === file.size);
+          if (!exists) {
+            attachedFiles.push(file);
+            addedCount++;
+          }
+        }
+      }
+
+      if (addedCount === 0 && files.length > 0) {
+        showToast('Only .xlsx, .xlsm, .xls spreadsheets are accepted (or file already attached)', true);
+      } else {
+        renderFileQueue();
+      }
+    }
+
+    // Remove single file
+    function removeFile(index) {
+      attachedFiles.splice(index, 1);
+      renderFileQueue();
+    }
+
+    // Render Attached File Queue
+    function renderFileQueue() {
+      fileQueueList.innerHTML = '';
+      attachedCountBadge.textContent = attachedFiles.length;
+
+      if (attachedFiles.length === 0) {
+        attachedFilesSection.classList.add('hidden');
+        cleanBtn.disabled = true;
+        cleanBtnText.textContent = 'Attach Excel Files to Clean';
+        return;
+      }
+
+      attachedFilesSection.classList.remove('hidden');
+      cleanBtn.disabled = false;
+      cleanBtnText.textContent = attachedFiles.length === 1
+        ? `Clean 1 Attached Workbook`
+        : `Clean All ${attachedFiles.length} Attached Workbooks`;
+
+      attachedFiles.forEach((file, idx) => {
+        const div = document.createElement('div');
+        div.className = 'flex items-center justify-between p-3 rounded-xl bg-slate-900/60 border border-slate-800 text-xs hover:border-slate-700 transition';
+        div.innerHTML = `
+          <div class="flex items-center space-x-3 truncate">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/10 text-emerald-400 flex items-center justify-center shrink-0">
+              <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <div class="truncate">
+              <div class="font-medium text-slate-200 truncate font-mono">${escapeHtml(file.name)}</div>
+              <div class="text-[11px] text-slate-400 font-mono">${formatBytes(file.size)}</div>
+            </div>
+          </div>
+          <button 
+            type="button" 
+            onclick="removeFile(${idx})" 
+            class="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition" 
+            title="Remove file"
+          >
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        `;
+        fileQueueList.appendChild(div);
+      });
+    }
+
+    // Event Handlers for File Selection
+    dropZone.addEventListener('click', () => fileInput.click());
+    addMoreFilesBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      fileInput.click();
+    });
+
+    clearAllFilesBtn.addEventListener('click', () => {
+      attachedFiles = [];
+      fileInput.value = '';
+      renderFileQueue();
+    });
+
+    fileInput.addEventListener('change', (e) => {
+      addFiles(e.target.files);
+      fileInput.value = '';
+    });
+
+    ['dragenter', 'dragover'].forEach(event => {
+      dropZone.addEventListener(event, (e) => {
+        e.preventDefault();
+        dropZone.classList.add('border-emerald-500', 'bg-slate-800/60');
+      });
+    });
+
+    ['dragleave', 'drop'].forEach(event => {
+      dropZone.addEventListener(event, (e) => {
+        e.preventDefault();
+        dropZone.classList.remove('border-emerald-500', 'bg-slate-800/60');
+      });
+    });
+
+    dropZone.addEventListener('drop', (e) => {
+      if (e.dataTransfer.files.length > 0) {
+        addFiles(e.dataTransfer.files);
+      }
+    });
+
+    // Cleaning Execution (Batch Flow)
+    cleanBtn.addEventListener('click', async () => {
+      if (attachedFiles.length === 0) return;
+
+      const totalFiles = attachedFiles.length;
+      uploadSection.classList.add('hidden');
+      resultsSection.classList.add('hidden');
+      processingView.classList.remove('hidden');
+
+      const options = {
+        removeQuotes: optQuotes.checked,
+        normalizeWhitespace: optNormalize.checked,
+        trimSpaces: optTrim.checked,
+        pruneEmptyRows: optPruneRows.checked
+      };
+
+      processedResults = [];
+      const startTime = Date.now();
+
+      for (let i = 0; i < totalFiles; i++) {
+        const file = attachedFiles[i];
+        const progressPercent = Math.round(((i + 1) / totalFiles) * 100);
+
+        processingTitle.textContent = `Cleaning Workbook ${i + 1} of ${totalFiles}...`;
+        processingStatusText.textContent = `Normalizing sheets in "${file.name}"...`;
+        progressBar.style.width = `${progressPercent}%`;
+
+        try {
+          const res = await fetch('/api/clean', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/octet-stream',
+              'X-Filename': encodeURIComponent(file.name),
+              'X-Options': encodeURIComponent(JSON.stringify(options))
+            },
+            body: file
+          });
+
+          const data = await res.json();
+          if (!res.ok || !data.success) {
+            throw new Error(data.error || 'Clean failed');
+          }
+
+          processedResults.push({
+            file,
+            success: true,
+            data
+          });
+        } catch (err) {
+          console.error(`Error cleaning ${file.name}:`, err);
+          processedResults.push({
+            file,
+            success: false,
+            error: err.message
+          });
+        }
+      }
+
+      const totalDuration = Date.now() - startTime;
+      displayBatchResults(totalDuration);
+    });
+
+    // Display Batch Results
+    function displayBatchResults(totalDurationMs) {
+      processingView.classList.add('hidden');
+      resultsSection.classList.remove('hidden');
+
+      const successful = processedResults.filter(r => r.success);
+      const totalTimeStr = totalDurationMs >= 1000 ? `${(totalDurationMs / 1000).toFixed(2)}s` : `${totalDurationMs}ms`;
+
+      batchTimeBadge.textContent = totalTimeStr;
+      resultsHeadline.textContent = successful.length === 1
+        ? `Workbook Cleaned Successfully!`
+        : `All ${successful.length} Workbooks Cleaned Successfully!`;
+      resultsSubtext.textContent = `${successful.length} of ${processedResults.length} files processed without errors`;
+
+      // Aggregate Stats
+      let aggSheets = 0;
+      let aggRows = 0;
+      let aggCells = 0;
+      let aggModified = 0;
+
+      successful.forEach(item => {
+        const s = item.data.stats;
+        aggSheets += s.sheetsProcessed;
+        aggRows += s.rowsProcessed;
+        aggCells += s.cellsVisited;
+        aggModified += s.modifiedCells;
+      });
+
+      statTotalFiles.textContent = successful.length;
+      statTotalSheets.textContent = aggSheets.toLocaleString();
+      statTotalRows.textContent = aggRows.toLocaleString();
+      statTotalCells.textContent = aggCells.toLocaleString();
+      statTotalModified.textContent = aggModified.toLocaleString();
+      statTotalTime.textContent = totalTimeStr;
+
+      // Master Download All Button
+      const allDownloadIds = successful.map(r => r.data.downloadId);
+      if (successful.length === 1) {
+        // Single file direct download
+        downloadAllBtn.href = successful[0].data.downloadUrl;
+        downloadAllBtn.setAttribute('download', successful[0].data.cleanedFilename);
+        downloadAllBtnText.textContent = `Download Cleaned File`;
+      } else {
+        // Multi-file ZIP download
+        downloadAllBtn.href = `/api/download-zip?ids=${allDownloadIds.join(',')}`;
+        downloadAllBtn.setAttribute('download', 'cleaned_workbooks.zip');
+        downloadAllBtnText.textContent = `Download All as ZIP (${successful.length} Files)`;
+      }
+
+      // Populate Cleaned Files List Cards
+      cleanedFilesList.innerHTML = '';
+      processedResults.forEach((item, index) => {
+        const card = document.createElement('div');
+        card.className = 'glass-card rounded-xl p-5 border border-slate-800 space-y-4';
+
+        if (!item.success) {
+          card.innerHTML = `
+            <div class="flex items-center justify-between text-xs">
+              <div class="flex items-center space-x-2 text-rose-400 font-mono">
+                <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span>${escapeHtml(item.file.name)}</span>
+              </div>
+              <span class="px-2 py-0.5 rounded bg-rose-500/20 text-rose-300 font-medium">Failed: ${escapeHtml(item.error)}</span>
+            </div>
+          `;
+          cleanedFilesList.appendChild(card);
+          return;
+        }
+
+        const data = item.data;
+        const diffs = data.sampleModifications || [];
+        const diffId = `diffSection_${index}`;
+
+        card.innerHTML = `
+          <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div class="flex items-center space-x-3 truncate">
+              <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <div class="truncate">
+                <div class="font-bold text-sm text-slate-100 font-mono truncate">${escapeHtml(data.cleanedFilename)}</div>
+                <div class="flex items-center space-x-2 text-xs text-slate-400 font-mono mt-0.5">
+                  <span>${formatBytes(data.cleanedSize)}</span>
+                  <span>•</span>
+                  <span>${data.stats.sheetsProcessed} sheet(s)</span>
+                  <span>•</span>
+                  <span>${data.stats.rowsProcessed.toLocaleString()} rows</span>
+                  <span>•</span>
+                  <span class="text-emerald-400 font-semibold">${data.stats.modifiedCells.toLocaleString()} modified</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="flex items-center space-x-2 shrink-0">
+              ${diffs.length > 0 ? `
+                <button 
+                  type="button" 
+                  onclick="toggleDiff('${diffId}')" 
+                  class="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-300 hover:text-white bg-slate-800 hover:bg-slate-700 border border-slate-700 transition flex items-center space-x-1"
+                >
+                  <svg class="w-3.5 h-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                  <span>Sample Changes (${diffs.length})</span>
+                </button>
+              ` : ''}
+              <a 
+                href="${data.downloadUrl}" 
+                download="${escapeHtml(data.cleanedFilename)}"
+                class="px-3.5 py-1.5 rounded-lg text-xs font-semibold text-emerald-300 hover:text-white bg-emerald-500/10 hover:bg-emerald-500/20 border border-emerald-500/30 transition flex items-center space-x-1"
+              >
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Download</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Collapsible Changes Preview -->
+          ${diffs.length > 0 ? `
+            <div id="${diffId}" class="hidden pt-3 border-t border-slate-800/80">
+              <div class="text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Sample Cleaned Cells:</div>
+              <div class="max-h-48 overflow-y-auto space-y-1 pr-1">
+                ${diffs.slice(0, 15).map(d => `
+                  <div class="p-2 rounded bg-slate-900/80 border border-slate-800 text-[11px] font-mono flex items-center justify-between gap-3">
+                    <span class="text-emerald-400 font-semibold shrink-0">${escapeHtml(d.sheet)}!${d.cell}</span>
+                    <span class="diff-removed truncate text-right">${escapeHtml(d.before)}</span>
+                    <span class="text-slate-500 shrink-0">➔</span>
+                    <span class="diff-added truncate">${escapeHtml(d.after)}</span>
+                  </div>
+                `).join('')}
+              </div>
+            </div>
+          ` : ''}
+        `;
+        cleanedFilesList.appendChild(card);
+      });
+
+      // Auto Download trigger if enabled
+      if (optAutoDownload.checked) {
+        if (successful.length === 1) {
+          triggerDownload(successful[0].data.downloadUrl, successful[0].data.cleanedFilename);
+        } else if (successful.length > 1) {
+          triggerDownload(`/api/download-zip?ids=${allDownloadIds.join(',')}`, 'cleaned_workbooks.zip');
+        }
+      }
+
+      showToast(`Cleaned ${aggModified.toLocaleString()} cells across ${successful.length} file(s)!`);
+    }
+
+    // Toggle Diff Accordion
+    window.toggleDiff = function(id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.classList.toggle('hidden');
+      }
+    };
+
+    // Trigger Download Helper
+    function triggerDownload(url, filename) {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // Clean Another Action
+    cleanAnotherBtn.addEventListener('click', () => {
+      resultsSection.classList.add('hidden');
+      uploadSection.classList.remove('hidden');
+      attachedFiles = [];
+      renderFileQueue();
+    });
+
+    // History Modal
+    async function loadHistory() {
+      historyFileList.innerHTML = '<div class="py-4 text-center text-xs text-slate-500">Loading output files...</div>';
+      try {
+        const res = await fetch('/api/history');
+        const data = await res.json();
+        if (data.files && data.files.length > 0) {
+          historyFileList.innerHTML = '';
+          data.files.forEach(f => {
+            const item = document.createElement('div');
+            item.className = 'py-2.5 flex items-center justify-between text-xs hover:bg-slate-800/50 px-2 rounded-lg transition';
+            item.innerHTML = `
+              <div class="truncate mr-3">
+                <div class="font-medium text-slate-200 truncate font-mono">${escapeHtml(f.filename)}</div>
+                <div class="text-[11px] text-slate-500">${formatBytes(f.size)} • ${new Date(f.mtime).toLocaleString()}</div>
+              </div>
+              <a href="/api/download/${encodeURIComponent(f.filename)}" download="${escapeHtml(f.filename)}" class="px-2.5 py-1 bg-emerald-500/10 text-emerald-400 hover:bg-emerald-500/20 rounded-md border border-emerald-500/30 font-medium shrink-0 flex items-center space-x-1">
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/></svg>
+                <span>Download</span>
+              </a>
+            `;
+            historyFileList.appendChild(item);
+          });
+        } else {
+          historyFileList.innerHTML = '<div class="py-4 text-center text-xs text-slate-500">No output files found yet.</div>';
+        }
+      } catch (err) {
+        historyFileList.innerHTML = `<div class="py-4 text-center text-xs text-rose-400">Failed to load history: ${err.message}</div>`;
+      }
+    }
+
+    viewHistoryBtn.addEventListener('click', () => {
+      historyModal.classList.remove('hidden');
+      loadHistory();
+    });
+
+    [closeHistoryBtn, closeHistoryBottomBtn].forEach(b => {
+      b.addEventListener('click', () => historyModal.classList.add('hidden'));
+    });
+
+    // Helper: Escape HTML
+    function escapeHtml(str) {
+      if (typeof str !== 'string') return String(str ?? '');
+      return str.replace(/[&<>"']/g, (m) => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+      }[m]));
+    }
+  </script>
+</body>
+</html>
